@@ -22,12 +22,17 @@ abstract class DocxEntry {
 
   void _updateArchive(Archive arch);
 
-  void _updateData(Archive arch, List<int> data) {
+  Archive _updateData(Archive arch, List<int> data) {
+    final updatedFiles = List<ArchiveFile>.from(arch.files);
     if (_index < 0) {
-      arch.addFile(ArchiveFile(_name, data.length, data));
+      updatedFiles.add(ArchiveFile(_name, data.length, data));
     } else {
-      arch.files[_index] = ArchiveFile(_name, data.length, data);
+      updatedFiles[_index] = ArchiveFile(_name, data.length, data);
     }
+    // Create a new Archive with updated files
+    final newArch = Archive();
+    newArch.files.addAll(updatedFiles);
+    return newArch;
   }
 }
 
@@ -55,7 +60,10 @@ class DocxXmlEntry extends DocxEntry {
     if (doc != null) {
       final data = doc!.toXmlString(pretty: false);
       List<int> out = utf8.encode(data);
-      _updateData(arch, out);
+      // Update the archive
+      final updatedArch = _updateData(arch, out);
+      arch.files.clear();
+      arch.files.addAll(updatedArch.files);
     }
   }
 }
@@ -122,8 +130,6 @@ class DocxRelsEntry extends DocxXmlEntry {
     return r;
   }
 
-  /* <Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image2.jpeg"/> */
-
   @override
   void _load(Archive arch, String entryName) {
     super._load(arch, entryName);
@@ -147,7 +153,9 @@ class DocxBinEntry extends DocxEntry {
 
   @override
   void _updateArchive(Archive arch) {
-    _updateData(arch, _data!);
+    final updatedArch = _updateData(arch, _data!);
+    arch.files.clear();
+    arch.files.addAll(updatedArch.files);
   }
 }
 
