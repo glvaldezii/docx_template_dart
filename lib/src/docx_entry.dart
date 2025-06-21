@@ -20,20 +20,19 @@ abstract class DocxEntry {
     return arch.files.indexWhere((element) => element.name == entryName);
   }
 
-  void _updateArchive(Archive arch);
+  Archive _updateArchive(Archive arch);
 
-  void _updateData(Archive arch, List<int> data) {
-    final updatedFiles = List<ArchiveFile>.from(arch.files);
-    if (_index < 0) {
-      updatedFiles.add(ArchiveFile(_name, data.length, data));
-    } else {
-      updatedFiles[_index] = ArchiveFile(_name, data.length, data);
+  Archive _updateData(Archive arch, List<int> data) {
+    final newArch = Archive();
+    // Copy existing files except the one being updated
+    for (var i = 0; i < arch.files.length; i++) {
+      if (i != _index || _index < 0) {
+        newArch.addFile(arch.files[i]);
+      }
     }
-    // Update the original archive
-    arch.clear();
-    for (var file in updatedFiles) {
-      arch.addFile(file);
-    }
+    // Add or replace the file
+    newArch.addFile(ArchiveFile(_name, data.length, data));
+    return newArch;
   }
 }
 
@@ -57,12 +56,13 @@ class DocxXmlEntry extends DocxEntry {
   }
 
   @override
-  void _updateArchive(Archive arch) {
+  Archive _updateArchive(Archive arch) {
     if (doc != null) {
       final data = doc!.toXmlString(pretty: false);
       List<int> out = utf8.encode(data);
-      _updateData(arch, out);
+      return _updateData(arch, out);
     }
+    return arch;
   }
 }
 
@@ -150,13 +150,13 @@ class DocxBinEntry extends DocxEntry {
   }
 
   @override
-  void _updateArchive(Archive arch) {
-    _updateData(arch, _data!);
+  Archive _updateArchive(Archive arch) {
+    return _updateData(arch, _data!);
   }
 }
 
 class DocxManager {
-  final Archive arch;
+  Archive arch;
   final _map = <String, DocxEntry>{};
 
   DocxManager(this.arch);
@@ -204,7 +204,7 @@ class DocxManager {
 
   void updateArch() {
     _map.forEach((key, value) {
-      value._updateArchive(arch);
+      arch = value._updateArchive(arch);
     });
   }
 }
