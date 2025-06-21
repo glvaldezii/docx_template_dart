@@ -22,17 +22,18 @@ abstract class DocxEntry {
 
   void _updateArchive(Archive arch);
 
-  Archive _updateData(Archive arch, List<int> data) {
+  void _updateData(Archive arch, List<int> data) {
     final updatedFiles = List<ArchiveFile>.from(arch.files);
     if (_index < 0) {
       updatedFiles.add(ArchiveFile(_name, data.length, data));
     } else {
       updatedFiles[_index] = ArchiveFile(_name, data.length, data);
     }
-    // Create a new Archive with updated files
-    final newArch = Archive();
-    newArch.files.addAll(updatedFiles);
-    return newArch;
+    // Update the original archive
+    arch.clear();
+    for (var file in updatedFiles) {
+      arch.addFile(file);
+    }
   }
 }
 
@@ -60,10 +61,7 @@ class DocxXmlEntry extends DocxEntry {
     if (doc != null) {
       final data = doc!.toXmlString(pretty: false);
       List<int> out = utf8.encode(data);
-      // Update the archive
-      final updatedArch = _updateData(arch, out);
-      arch.files.clear();
-      arch.files.addAll(updatedArch.files);
+      _updateData(arch, out);
     }
   }
 }
@@ -153,9 +151,7 @@ class DocxBinEntry extends DocxEntry {
 
   @override
   void _updateArchive(Archive arch) {
-    final updatedArch = _updateData(arch, _data!);
-    arch.files.clear();
-    arch.files.addAll(updatedArch.files);
+    _updateData(arch, _data!);
   }
 }
 
